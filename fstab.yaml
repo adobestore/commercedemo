@@ -1,0 +1,7 @@
+mountpoints:
+  /:
+    url: https://content.da.live/adobestore/commercedemo/
+    type: markup
+
+folders:
+  /products/: /products/default
