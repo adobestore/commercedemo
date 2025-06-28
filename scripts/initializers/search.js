@@ -1,23 +1,28 @@
+/* eslint-disable import/no-unresolved */
 import { initializers } from '@dropins/tools/initializer.js';
 import {
   initialize,
-  setFetchGraphQlHeaders,
   setEndpoint,
-} from '@dropins/storefront-product-discovery/api.js';
-import { getHeaders } from '@dropins/tools/lib/aem/configs.js';
+  setFetchGraphQlHeaders,
+} from '@dropins/storefront-search/api.js';
+// eslint-disable-next-line import/no-cycle
 import { initializeDropin } from './index.js';
-import { fetchPlaceholders, commerceEndpointWithQueryParams } from '../commerce.js';
+import { fetchPlaceholders } from '../aem.js';
+import { getHeaders, getConfigValue } from '../configs.js';
 
 await initializeDropin(async () => {
-  setEndpoint(await commerceEndpointWithQueryParams());
-  setFetchGraphQlHeaders((prev) => ({ ...prev, ...getHeaders('cs') }));
+  const labels = await fetchPlaceholders();
 
-  const labels = await fetchPlaceholders('placeholders/search.json');
   const langDefinitions = {
     default: {
       ...labels,
     },
   };
 
-  return initializers.mountImmediately(initialize, { langDefinitions });
+  setEndpoint(await getConfigValue('commerce-endpoint'));
+  setFetchGraphQlHeaders(await getHeaders('cs'));
+
+  return initializers.mountImmediately(initialize, {
+    langDefinitions,
+  });
 })();

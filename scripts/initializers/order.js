@@ -1,11 +1,11 @@
 import { events } from '@dropins/tools/event-bus.js';
 import { initializers } from '@dropins/tools/initializer.js';
-import { getHeaders } from '@dropins/tools/lib/aem/configs.js';
 import { initialize, setFetchGraphQlHeaders } from '@dropins/storefront-order/api.js';
+import { checkIsAuthenticated, getHeaders } from '../configs.js';
 import { initializeDropin } from './index.js';
+import { fetchPlaceholders } from '../aem.js';
+
 import {
-  fetchPlaceholders,
-  checkIsAuthenticated,
   CUSTOMER_ORDER_DETAILS_PATH,
   ORDER_DETAILS_PATH,
   CUSTOMER_RETURN_DETAILS_PATH,
@@ -14,11 +14,8 @@ import {
   CREATE_RETURN_PATH,
   CUSTOMER_ORDERS_PATH,
   ORDER_STATUS_PATH,
-  CUSTOMER_PATH,
-  SALES_GUEST_VIEW_PATH,
-  SALES_ORDER_VIEW_PATH,
-  rootLink,
-} from '../commerce.js';
+  CUSTOMER_PATH, SALES_GUEST_VIEW_PATH, SALES_ORDER_VIEW_PATH,
+} from '../constants.js';
 
 await initializeDropin(async () => {
   const { pathname, searchParams } = new URL(window.location.href);
@@ -31,9 +28,9 @@ await initializeDropin(async () => {
   const orderNumber = searchParams.get('orderNumber');
   const isTokenProvided = orderRef && orderRef.length > 20;
 
-  setFetchGraphQlHeaders((prev) => ({ ...prev, ...getHeaders('order') }));
+  setFetchGraphQlHeaders(await getHeaders('order'));
 
-  const labels = await fetchPlaceholders('placeholders/order.json');
+  const labels = await fetchPlaceholders();
   const langDefinitions = {
     default: {
       ...labels,
@@ -84,11 +81,11 @@ async function handleUserOrdersRedirects(
 
   events.on('order/error', () => {
     if (checkIsAuthenticated()) {
-      window.location.href = rootLink(CUSTOMER_ORDERS_PATH);
+      window.location.href = CUSTOMER_ORDERS_PATH;
     } else if (isTokenProvided) {
-      window.location.href = orderNumber ? rootLink(`${ORDER_STATUS_PATH}?orderRef=${orderNumber}`) : rootLink(ORDER_STATUS_PATH);
+      window.location.href = orderNumber ? `${ORDER_STATUS_PATH}?orderRef=${orderNumber}` : ORDER_STATUS_PATH;
     } else {
-      window.location.href = rootLink(`${ORDER_STATUS_PATH}?orderRef=${orderRef}`);
+      window.location.href = `${ORDER_STATUS_PATH}?orderRef=${orderRef}`;
     }
   });
 
@@ -109,7 +106,7 @@ async function handleUserOrdersRedirects(
   }
 
   if (targetPath) {
-    window.location.href = rootLink(targetPath);
+    window.location.href = targetPath;
   } else {
     await initializers.mountImmediately(initialize, {
       langDefinitions,
